@@ -1,0 +1,111 @@
+.resistance-matrix-container {
+  background: #f9f9f9;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.resistance-matrix-container h3 {
+  margin-top: 0;
+  color: #333;
+}
+
+.matrix-description {
+  color: #666;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.matrix-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+}
+
+.matrix-cell {
+  border: 3px solid #ccc;
+  border-radius: 6px;
+  padding: 1rem;
+  text-align: center;
+  transition: all 0.3s;
+  background: white;
+}
+
+.matrix-cell.covered {
+  background: #d4edda;
+  border-color: #28a745;
+}
+
+.matrix-cell.weak {
+  background: #f8d7da;
+  border-color: #dc3545;
+}
+
+.type-name {
+  display: block;
+  font-weight: bold;
+  font-size: 0.9rem;
+  margin-bottom: 0.25rem;
+}
+
+.status {
+  display: block;
+  font-size: 1.5rem;
+}
+
+.remaining-weaknesses,
+.coverage-complete {
+  background: white;
+  padding: 1rem;
+  border-radius: 4px;
+  margin-top: 1rem;
+}
+
+.remaining-weaknesses h4 {
+  margin-top: 0;
+  color: #dc3545;
+}
+
+.remaining-weaknesses ul {
+  list-style-position: inside;
+  padding: 0;
+  margin: 0;
+}
+
+.remaining-weaknesses li {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #eee;
+}
+
+.remaining-weaknesses li:last-child {
+  border-bottom: none;
+}
+
+.coverage-complete {
+  background: linear-gradient(135deg, #d4edda, #c3e6cb);
+  border-left: 4px solid #28a745;
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #155724;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .matrix-grid {
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 0.5rem;
+  }
+
+  .matrix-cell {
+    padding: 0.75rem;
+  }
+
+  .type-name {
+    font-size: 0.8rem;
+  }
+
+  .status {
+    font-size: 1.2rem;
+  }
+}
