@@ -245,12 +245,13 @@ function suggestComplementaryParties(initialParty, candidatePool, buildType = nu
             );
             break;
           case 'cycle':
-            // サイクル構築: 耐久の低いポケモンを優先（HP+防御+特防が平均以下のポケモンを残す）
-            const avgHp = filteredCandidates.reduce((sum, c) => sum + (c.stats?.hp || 0), 0) / filteredCandidates.length;
-            const avgDefense = filteredCandidates.reduce((sum, c) => sum + (c.stats?.defense || 0), 0) / filteredCandidates.length;
-            const avgSpecialDefense = filteredCandidates.reduce((sum, c) => sum + (c.stats?.['special-defense'] || 0), 0) / filteredCandidates.length;
+            // サイクル構築: 高火力・高速ポケモンを優先
+            const avgCycleScore = filteredCandidates.reduce((sum, c) => 
+              sum + (c.stats?.attack || 0) + (c.stats?.['special-attack'] || 0) + (c.stats?.speed || 0),
+              0
+            ) / filteredCandidates.length;
             filteredCandidates = filteredCandidates.filter(c => 
-              (c.stats?.hp || 0) + (c.stats?.defense || 0) + (c.stats?.['special-defense'] || 0) <= avgHp + avgDefense + avgSpecialDefense
+              ((c.stats?.attack || 0) + (c.stats?.['special-attack'] || 0) + (c.stats?.speed || 0)) >= avgCycleScore
             );
             break;
           case 'stall':

@@ -4,7 +4,7 @@ const { fetchPokemonDetails } = require('../services/pokeapi');
 const { buildTypes, identifyWeaknesses, suggestComplementaryParties } = require('../services/partyCompletion');
 const { USAGE_RANKINGS, filterChampionsOnly } = require('../services/usageRankings');
 const { getOfficialChampionsPagePokemon, isOfficialChampionsPagePokemon } = require('../services/championsPagePokemon');
-const { getJapaneseSuggestions, translateToEnglish, translateToJapanese, translateTypeToJapanese } = require('../services/japaneseNames');
+const { getJapaneseSuggestions, translateToEnglish, translateToJapanese, translateTypeToJapanese, getBasePokemonName } = require('../services/japaneseNames');
 
 /**
  * GET /api/search-suggestions
@@ -47,7 +47,8 @@ router.post('/search', async (req, res) => {
     }
 
     const searchName = translateToEnglish(name);
-    if (!isOfficialChampionsPagePokemon(searchName)) {
+    const isMegaOfficial = searchName.includes('-mega') && isOfficialChampionsPagePokemon(getBasePokemonName(searchName));
+    if (!isOfficialChampionsPagePokemon(searchName) && !isMegaOfficial) {
       return res.status(404).json({
         success: false,
         error: `ポケモン「${name}」は公式チャンピオンズページに掲載されていません。`
