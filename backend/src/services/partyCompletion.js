@@ -62,6 +62,21 @@ function canAddCandidateByTypeLimit(candidate, partyMembers, maxSameTypeCount = 
   return candidate.types.every(type => (typeCounts[type] || 0) < maxSameTypeCount);
 }
 
+function hasOverlappingType(candidate, partyMembers) {
+  if (!candidate.types || !Array.isArray(candidate.types)) {
+    return false;
+  }
+
+  const partyTypes = new Set();
+  partyMembers.forEach(member => {
+    if (Array.isArray(member.types)) {
+      member.types.forEach(type => partyTypes.add(type));
+    }
+  });
+
+  return candidate.types.some(type => partyTypes.has(type));
+}
+
 function calculateTypeSynergyBonus(candidate, partyMembers, buildType = null) {
   if (buildType !== 'cycle' || !Array.isArray(candidate.types)) {
     return 0;
@@ -268,8 +283,12 @@ function suggestComplementaryParties(initialParty, candidatePool, buildType = nu
       });
       if (remainingCandidates.length === 0) break;
 
-      // 同じタイプが3体以上にならないようにフィルタリング
-      let filteredCandidates = remainingCandidates.filter(candidate => canAddCandidateByTypeLimit(candidate, party, 2));
+      // タイプが重ならない候補を優先
+      let filteredCandidates = remainingCandidates.filter(candidate => !hasOverlappingType(candidate, party));
+      if (filteredCandidates.length === 0) {
+        // 完全な重複排除候補がない場合は、同じタイプが3体以上にならない候補を使う
+        filteredCandidates = remainingCandidates.filter(candidate => canAddCandidateByTypeLimit(candidate, party, 2));
+      }
       if (filteredCandidates.length === 0) {
         filteredCandidates = remainingCandidates;
       }
