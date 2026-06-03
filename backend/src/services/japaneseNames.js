@@ -499,21 +499,15 @@ function getJapaneseSuggestions(query) {
       japanese: japaneseName
     }));
 
-  const officialEnglishNames = new Set(
-    OFFICIAL_CHAMPIONS_PAGE_POKEMON
-      .map(({ englishName }) => englishName)
-      .filter(Boolean)
-  );
-
-  const megaSuggestions = Object.entries(JAPANESE_NAME_MAP)
-    .filter(([en, jp]) => en.includes('-mega'))
+  const mappingSuggestions = Object.entries(JAPANESE_NAME_MAP)
     .filter(([en, jp]) => {
-      const baseEnglish = en.replace(/-mega(-[xy])?$/, '');
-      return officialEnglishNames.has(baseEnglish) && (normalize(jp).includes(normalized) || normalize(en).includes(normalized));
+      const normalizedJapanese = normalize(jp);
+      const normalizedEnglish = normalize(en);
+      return normalizedJapanese.includes(normalized) || normalizedEnglish.includes(normalized);
     })
     .map(([en, jp]) => ({ english: en, japanese: jp }));
 
-  const suggestions = [...championSuggestions, ...megaSuggestions];
+  const suggestions = [...championSuggestions, ...mappingSuggestions];
   const seen = new Set();
   const uniqueSuggestions = [];
 

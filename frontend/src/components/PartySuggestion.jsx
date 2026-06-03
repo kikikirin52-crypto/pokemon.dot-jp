@@ -77,6 +77,7 @@ function PartySuggestion({ suggestions, selectedBuildType, onUseSuggestion }) {
   return (
     <div className="party-suggestion-container">
       <h3>提案されたパーティ</h3>
+      <p className="suggestion-note">この提案はあくまで構築の目安です。初心者向けの参考としてご利用ください。</p>
       {selectedBuildType && (
         <div className="selected-build-type">
           <h4>選択された構築タイプ: {selectedBuildType.name}</h4>
