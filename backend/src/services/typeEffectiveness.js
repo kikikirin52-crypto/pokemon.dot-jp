@@ -105,7 +105,8 @@ const TYPE_EFFECTIVENESS = {
     'fire': 0.5,
     'ground': 0.5,
     'rock': 0.5,
-    'water': 0.5
+    'water': 0.5,
+    'dragon': 0.5
   },
   'water': {
     'steel': 2,
@@ -113,7 +114,8 @@ const TYPE_EFFECTIVENESS = {
     'water': 0.5,
     'grass': 0.5,
     'ice': 2,
-    'ground': 2
+    'ground': 2,
+    'dragon': 0.5
   },
   'grass': {
     'ground': 2,
@@ -124,14 +126,17 @@ const TYPE_EFFECTIVENESS = {
     'flying': 0.5,
     'bug': 0.5,
     'fire': 0.5,
-    'steel': 0.5
+    'steel': 0.5,
+    'dragon': 0.5
   },
   'electric': {
     'flying': 2,
     'water': 2,
     'electric': 0.5,
     'grass': 0.5,
-    'ground': 0
+    'ground': 0,
+    'dragon': 0.5,
+    'steel': 0.5
   },
   'psychic': {
     'fighting': 2,
@@ -147,7 +152,6 @@ const TYPE_EFFECTIVENESS = {
     'dragon': 2,
     'fire': 0.5,
     'water': 0.5,
-    'grass': 0.5,
     'ice': 0.5,
     'steel': 0.5
   },
@@ -158,7 +162,8 @@ const TYPE_EFFECTIVENESS = {
     'water': 0.5,
     'grass': 0.5,
     'ice': 0.5,
-    'electric': 0.5
+    'electric': 0.5,
+    'fairy': 0
   },
   'dark': {
     'fighting': 0.5,
@@ -173,7 +178,8 @@ const TYPE_EFFECTIVENESS = {
     'dark': 2,
     'fire': 0.5,
     'steel': 0.5,
-    'flying': 0.5
+    'flying': 0.5,
+    'dragon': 2
   }
 };
 

@@ -87,11 +87,13 @@ async function build() {
   // ステップ2: ビルド結果をバックエンドにコピー
   logSection('ステップ2: ビルド結果をバックエンドにコピー中...');
 
-  // backend/public ディレクトリを作成
-  if (!fs.existsSync(publicDir)) {
-    fs.mkdirSync(publicDir, { recursive: true });
-    log(colors.cyan, 'backend/public ディレクトリを作成しました');
+  // backend/public ディレクトリをクリーンアップして作成
+  if (fs.existsSync(publicDir)) {
+    log(colors.cyan, 'backend/public をクリーンアップしています...');
+    removeDirSync(publicDir);
   }
+  fs.mkdirSync(publicDir, { recursive: true });
+  log(colors.cyan, 'backend/public ディレクトリを用意しました');
 
   // フロントエンドのビルド結果をコピー
   const buildDir = path.join(frontendDir, 'build');
@@ -157,6 +159,21 @@ function copyDirSync(src, dest) {
       fs.copyFileSync(srcPath, destPath);
     }
   });
+}
+
+function removeDirSync(dir) {
+  if (!fs.existsSync(dir)) return;
+
+  const entries = fs.readdirSync(dir);
+  entries.forEach((entry) => {
+    const entryPath = path.join(dir, entry);
+    if (fs.statSync(entryPath).isDirectory()) {
+      removeDirSync(entryPath);
+    } else {
+      fs.unlinkSync(entryPath);
+    }
+  });
+  fs.rmdirSync(dir);
 }
 
 // 実行

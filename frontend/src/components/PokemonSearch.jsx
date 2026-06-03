@@ -6,32 +6,30 @@ import '../styles/PokemonSearch.css';
  * ポケモン検索・入力フォーム
  * インクリメンタルサーチ機能付き
  */
-function PokemonSearch({ onPokemonSelect, selectedPokemons = [] }) {
+function PokemonSearch({ onPokemonSelect, selectedPokemons = [], onPokemonRemove }) {
   const [searchInput, setSearchInput] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // インクリメンタルサーチ
+  // インクリメンタルサーチ（デバウンス）
   useEffect(() => {
     if (searchInput.length < 1) {
       setSuggestions([]);
       return;
     }
 
-    const fetchSuggestions = async () => {
+    const timeoutId = setTimeout(async () => {
       try {
-        console.log('検索候補取得開始:', searchInput);
         const results = await getSearchSuggestions(searchInput);
-        console.log('検索候補取得結果:', results);
         setSuggestions(results.slice(0, 10));
       } catch (error) {
         console.error('検索候補取得エラー:', error);
         setSuggestions([]);
       }
-    };
+    }, 250);
 
-    fetchSuggestions();
+    return () => clearTimeout(timeoutId);
   }, [searchInput]);
 
   // Enter キーでの検索
@@ -68,7 +66,12 @@ function PokemonSearch({ onPokemonSelect, selectedPokemons = [] }) {
     performSearch(pokemonName);
   };
 
-  // 削除ボタン（選択済みポケモンから削除するにはApp.jsxで実装が必要）
+  // 選択済みポケモンを削除
+  const handleRemovePokemon = (index) => {
+    if (typeof onPokemonRemove === 'function') {
+      onPokemonRemove(index);
+    }
+  };
 
   return (
     <div className="pokemon-search-container">
@@ -134,6 +137,13 @@ function PokemonSearch({ onPokemonSelect, selectedPokemons = [] }) {
                     {pokemon.displayTypes ? pokemon.displayTypes.join(' / ') : pokemon.types ? pokemon.types.join(', ') : 'タイプ不明'}
                   </span>
                 </div>
+                <button
+                  type="button"
+                  className="remove-pokemon-button"
+                  onClick={() => handleRemovePokemon(index)}
+                >
+                  削除
+                </button>
               </li>
             ))}
           </ul>

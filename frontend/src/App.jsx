@@ -13,6 +13,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [buildTypes, setBuildTypes] = useState([]);
   const [selectedBuildType, setSelectedBuildType] = useState(null);
+  const [appError, setAppError] = useState('');
   const analysisSectionRef = useRef(null);
   const suggestionSectionRef = useRef(null);
 
@@ -29,16 +30,29 @@ function App() {
   }, []);
 
   const handlePokemonSelect = (pokemon) => {
+    const alreadySelected = selectedPokemons.some(
+      (selected) => selected.name.toLowerCase() === pokemon.name.toLowerCase()
+    );
+    if (alreadySelected) {
+      setAppError(`${pokemon.japaneseName || pokemon.displayName || pokemon.name} はすでに選択されています`);
+      return;
+    }
+
     if (selectedPokemons.length < 5) {
       setSelectedPokemons([...selectedPokemons, pokemon]);
+      setAppError('');
     } else {
-      window.alert('最大5匹まで選択できます');
+      setAppError('最大5匹まで選択できます');
     }
+  };
+
+  const handleRemovePokemon = (index) => {
+    setSelectedPokemons(selectedPokemons.filter((_, i) => i !== index));
   };
 
   const handleAnalyzeParty = async () => {
     if (selectedPokemons.length === 0) {
-      window.alert('ポケモンを1匹以上選択してください');
+      setAppError('ポケモンを1匹以上選択してください');
       return;
     }
 
@@ -47,8 +61,9 @@ function App() {
       const analysis = await analyzeParty(selectedPokemons);
       setPartyAnalysis(analysis);
       setSuggestions(null);
+      setAppError('');
     } catch (error) {
-      window.alert('パーティの分析に失敗しました');
+      setAppError('パーティの分析に失敗しました');
       console.error(error);
     } finally {
       setIsLoading(false);
@@ -57,7 +72,7 @@ function App() {
 
   const handleAutoComplete = async () => {
     if (selectedPokemons.length === 0) {
-      window.alert('ポケモンを1匹以上選択してください');
+      setAppError('ポケモンを1匹以上選択してください');
       return;
     }
 
@@ -66,8 +81,9 @@ function App() {
       const suggestionResult = await suggestComplementaryParty(selectedPokemons, selectedBuildType?.strategy);
       setSuggestions(suggestionResult);
       setPartyAnalysis(null);
+      setAppError('');
     } catch (error) {
-      window.alert('パーティの自動生成に失敗しました');
+      setAppError('パーティの自動生成に失敗しました');
       console.error(error);
     } finally {
       setIsLoading(false);
@@ -78,6 +94,7 @@ function App() {
     setSelectedPokemons([]);
     setPartyAnalysis(null);
     setSuggestions(null);
+    setAppError('');
   };
 
   const handleUseSuggestion = (suggestedParty) => {
@@ -126,6 +143,9 @@ function App() {
               {isLoading ? '生成中...' : '自動生成'}
             </button>
           </div>
+          {appError && (
+            <div className="app-error-message">⚠️ {appError}</div>
+          )}
         </div>
       </header>
 
@@ -136,7 +156,11 @@ function App() {
               <span>STEP 1</span>
               <h2>ポケモンを選択</h2>
             </div>
-            <PokemonSearch onPokemonSelect={handlePokemonSelect} selectedPokemons={selectedPokemons} />
+            <PokemonSearch
+              onPokemonSelect={handlePokemonSelect}
+              selectedPokemons={selectedPokemons}
+              onPokemonRemove={handleRemovePokemon}
+            />
             {buildTypes.length > 0 && (
               <div className="build-type-selection">
                 <label htmlFor="build-type-select">構築タイプ</label>

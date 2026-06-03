@@ -140,40 +140,15 @@ function identifyWeaknesses(partyMembers) {
     }
   });
 
-  // 一貫性タイプを最大3タイプまでに制限（弱点の強い順）
-  return weaknesses
-    .sort((a, b) => b.minDamage - a.minDamage)
-    .slice(0, 3);
+  // 一貫性タイプは全て返す。ラウドボーンなどの複合タイプの弱点も漏らさない。
+  return weaknesses.sort((a, b) => b.minDamage - a.minDamage);
 }
 
 /**
  * 補完候補のスコアリング
  * Score = (解消できる一貫性タイプの数 × 100) + 使用率ボーナス
  */
-function calculateTopTenCoverageBonus(candidate, topRankedPokemon) {
-  if (!topRankedPokemon || topRankedPokemon.length === 0) {
-    return 0;
-  }
-
-  let coveredCount = 0;
-  topRankedPokemon.forEach(topPokemon => {
-    if (!topPokemon.types || topPokemon.types.length === 0) {
-      return;
-    }
-
-    const worstDamage = topPokemon.types
-      .map(type => calculateDamageTaken(type, candidate.types))
-      .reduce((max, damage) => Math.max(max, damage), 0);
-
-    if (worstDamage <= 1.0) {
-      coveredCount += 1;
-    }
-  });
-
-  return coveredCount * 30;
-}
-
-function scoreCandidate(candidate, currentWeaknesses, buildType = null, party = [], topRankedPokemon = []) {
+function scoreCandidate(candidate, currentWeaknesses, buildType = null, party = []) {
   const resistantTypes = [];
 
   // このポケモンが受けられるタイプを調べる
@@ -187,7 +162,6 @@ function scoreCandidate(candidate, currentWeaknesses, buildType = null, party = 
   // スコア計算
   const typeScore = resistantTypes.length * 100;
   const usageBonus = getUsageBonus(candidate.name);
-  const topTenBonus = calculateTopTenCoverageBonus(candidate, topRankedPokemon);
   let buildBonus = 0;
 
   // 構築タイプによるボーナス
@@ -228,7 +202,7 @@ function scoreCandidate(candidate, currentWeaknesses, buildType = null, party = 
   const megaBonus = (currentMegaCount < 2 && isMegaPokemon(candidate.name)) ? 50 : 0;
   const synergyBonus = calculateTypeSynergyBonus(candidate, party, buildType);
 
-  const totalScore = typeScore + usageBonus + buildBonus + megaBonus + topTenBonus + synergyBonus;
+  const totalScore = typeScore + usageBonus + buildBonus + megaBonus + synergyBonus;
 
   return {
     pokemon: candidate.name,
@@ -237,7 +211,6 @@ function scoreCandidate(candidate, currentWeaknesses, buildType = null, party = 
     usageBonus: usageBonus,
     buildBonus: buildBonus,
     megaBonus: megaBonus,
-    topTenBonus: topTenBonus,
     synergyBonus: synergyBonus,
     coversTypes: resistantTypes,
     coverCount: resistantTypes.length
@@ -249,12 +222,7 @@ function scoreCandidate(candidate, currentWeaknesses, buildType = null, party = 
  * 高使用率パーティ、中間使用率パーティ、低使用率パーティ、弱点なしパーティ、最小弱点パーティ、完全弱点なしパーティ、最高種族値パーティ
  */
 function suggestComplementaryParties(initialParty, candidatePool, buildType = null, maxPartySize = 6) {
-  const generateParty = (usageWeight, targetWeaknessCount = null, prioritizeStats = false, sharedUsed = null) => {
-    const topRankedPokemon = [...candidatePool]
-      .filter(candidate => USAGE_RANKINGS[candidate.name.toLowerCase()]?.rank)
-      .sort((a, b) => (USAGE_RANKINGS[a.name.toLowerCase()]?.rank || Number.MAX_SAFE_INTEGER) - (USAGE_RANKINGS[b.name.toLowerCase()]?.rank || Number.MAX_SAFE_INTEGER))
-      .slice(0, 10);
-
+  const generateParty = (targetWeaknessCount = null, prioritizeStats = false, sharedUsed = null) => {
     const party = [...initialParty];
     const used = sharedUsed || new Set();
     if (!sharedUsed) {
@@ -357,13 +325,12 @@ function suggestComplementaryParties(initialParty, candidatePool, buildType = nu
               usageBonus: 0,
               buildBonus: 0,
               megaBonus: 0,
-              topTenBonus: 0,
               coversTypes: [],
               coverCount: 0
             };
           } else {
             // 通常の弱点カバーロジック
-            return scoreCandidate(candidate, weaknesses, buildType, party, topRankedPokemon);
+            return scoreCandidate(candidate, weaknesses, buildType, party);
           }
         })
         .sort((a, b) => b.totalScore - a.totalScore);
@@ -377,10 +344,11 @@ function suggestComplementaryParties(initialParty, candidatePool, buildType = nu
       used.add(getBaseName(pokemon.name).toLowerCase());
     }
 
+    const finalWeaknesses = identifyWeaknesses(party);
     return {
       finalParty: party,
-      remainingWeaknesses: identifyWeaknesses(party),
-      isCoverageComplete: identifyWeaknesses(party).length === 0
+      remainingWeaknesses: finalWeaknesses,
+      isCoverageComplete: finalWeaknesses.length === 0
     };
   };
 
@@ -391,8 +359,8 @@ function suggestComplementaryParties(initialParty, candidatePool, buildType = nu
     sharedUsed.add(getBaseName(p.name).toLowerCase());
   });
 
-  // 高使用率パーティ（使用率ボーナスを2倍）
-  const highUsageParty = generateParty(2.0, null, false, sharedUsed);
+  // 高使用率パーティ
+  const highUsageParty = generateParty(null, false, sharedUsed);
 
   return {
     highUsage: highUsageParty

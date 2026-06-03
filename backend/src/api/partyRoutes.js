@@ -19,7 +19,7 @@ router.get('/search-suggestions', (req, res) => {
     }
 
     const suggestions = getJapaneseSuggestions(query);
-    console.log(`[API] 候補検索: "${query}" -> ${suggestions.length}件`);
+    console.debug(`[API] 候補検索: "${query}" -> ${suggestions.length}件`);
 
     res.json({
       success: true,
@@ -57,10 +57,10 @@ router.post('/search', async (req, res) => {
       });
     }
 
-    console.log(`[API] ポケモン検索: ${searchName}`);
+    console.debug(`[API] ポケモン検索: ${searchName}`);
     const pokemon = await fetchPokemonDetails(searchName);
 
-    console.log(`[API] 検索成功: ${pokemon.name}`);
+    console.debug(`[API] 検索成功: ${pokemon.name}`);
     res.json({
       success: true,
       pokemon: {
@@ -82,7 +82,7 @@ router.post('/search', async (req, res) => {
  * POST /api/party/analyze
  * 現在のパーティを分析（一貫性を特定）
  */
-router.post('/analyze', (req, res) => {
+router.post('/analyze', async (req, res) => {
   try {
     const { partyMembers } = req.body;
 
@@ -94,7 +94,33 @@ router.post('/analyze', (req, res) => {
       return res.status(400).json({ error: 'パーティにポケモンを追加してください' });
     }
 
-    const weaknesses = identifyWeaknesses(partyMembers).map(weakness => ({
+    // partyMembers に types 情報がない場合は PokeAPI から補完する
+    // また、フロントが日本語タイプ名を送ってきた場合は英語キーに正規化する
+    const { translateTypeToEnglish } = require('../services/japaneseNames');
+    const enhancedPartyMembers = await Promise.all(partyMembers.map(async (member) => {
+      try {
+        if (member && Array.isArray(member.types) && member.types.length > 0) {
+          // types が日本語表記かもしれないので英語に正規化して返す
+          const normalizedTypes = member.types.map(t => translateTypeToEnglish(t));
+          return { ...member, types: normalizedTypes };
+        }
+        // member.name を使って詳細を取得
+        const details = await fetchPokemonDetails(member.name || member);
+        return {
+          ...member,
+          types: details.types,
+          displayTypes: details.displayTypes,
+          japaneseName: details.japaneseName || member.japaneseName,
+          displayName: details.displayName || member.displayName,
+          stats: details.stats
+        };
+      } catch (err) {
+        console.error(`[API] パーティメンバー補完エラー: ${member && member.name} - ${err.message}`);
+        return member; // 補完失敗でも元データで進める
+      }
+    }));
+
+    const weaknesses = identifyWeaknesses(enhancedPartyMembers).map(weakness => ({
       ...weakness,
       displayType: translateTypeToJapanese(weakness.type)
     }));
@@ -102,7 +128,7 @@ router.post('/analyze', (req, res) => {
     res.json({
       success: true,
       partyAnalysis: {
-        partySize: partyMembers.length,
+        partySize: enhancedPartyMembers.length,
         weaknesses: weaknesses,
         consistentTypes: weaknesses,
         weaknessCount: weaknesses.length,

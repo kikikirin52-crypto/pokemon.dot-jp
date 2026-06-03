@@ -158,7 +158,6 @@ const JAPANESE_NAME_MAP = {
   'meowstic': 'トリミアン',
   'aegislash': 'ギルガルド',
   'aegislash-shield': 'ギルガルド',
-  'mimikyu-disguised': 'ミミッキュ',
   'barbaracle': 'ガチゴラス',
   'amaura': 'アマルルガ',
   'tyrunt': 'バリコオル',
@@ -166,7 +165,7 @@ const JAPANESE_NAME_MAP = {
   // チャンピオンズ掲載ポケモンのメガ表記（不足分を追加）
   ,'charizard-mega': 'メガリザードン'
   ,'aegislash-mega': 'メガギルガルド'
-  ,'mimikyu-disguised-mega': 'メガミミッキュ'
+  ,'medicham-mega': 'メガチャーレム'
   ,'azumarill-mega': 'メガマリルリ'
   ,'snorlax-mega': 'メガカビゴン'
   ,'ninetales-mega': 'メガキュウコン'
@@ -485,6 +484,24 @@ function translateTypeToJapanese(typeName) {
   return TYPE_NAME_MAP[typeName.toLowerCase()] || typeName;
 }
 
+/**
+ * 日本語のタイプ名を英語キーに変換
+ */
+function translateTypeToEnglish(typeName) {
+  if (!typeName) return null;
+  const lower = typeName.toString().toLowerCase();
+  // TYPE_NAME_MAP の逆引きテーブルを作成
+  const reverse = Object.entries(TYPE_NAME_MAP).reduce((acc, [en, jp]) => {
+    acc[jp] = en;
+    return acc;
+  }, {});
+
+  if (reverse[lower]) return reverse[lower];
+
+  // 既に英語のキーが渡された場合は小文字で返す
+  return lower;
+}
+
 function getJapaneseSuggestions(query) {
   const normalized = normalize(query);
 
@@ -542,6 +559,7 @@ module.exports = {
   translateToEnglish,
   translateToJapanese,
   translateTypeToJapanese,
+  translateTypeToEnglish,
   getJapaneseSuggestions,
   getBasePokemonName,
   JAPANESE_NAME_MAP,
