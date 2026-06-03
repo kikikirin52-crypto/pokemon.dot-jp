@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import PokemonSearch from './components/PokemonSearch';
 import ResistanceMatrix from './components/ResistanceMatrix';
 import PartySuggestion from './components/PartySuggestion';
+import FeedbackForm from './components/FeedbackForm';
 import { analyzeParty, suggestComplementaryParty, getBuildTypes } from './api/client';
 import './App.css';
 
@@ -12,8 +13,9 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [buildTypes, setBuildTypes] = useState([]);
   const [selectedBuildType, setSelectedBuildType] = useState(null);
+  const analysisSectionRef = useRef(null);
+  const suggestionSectionRef = useRef(null);
 
-  // 構築タイプを取得
   useEffect(() => {
     const fetchBuildTypes = async () => {
       try {
@@ -26,19 +28,17 @@ function App() {
     fetchBuildTypes();
   }, []);
 
-  // ポケモンが選択されたときの処理
   const handlePokemonSelect = (pokemon) => {
-    if (selectedPokemons.length < 3) {
+    if (selectedPokemons.length < 5) {
       setSelectedPokemons([...selectedPokemons, pokemon]);
     } else {
-      alert('最大3匹まで選択できます');
+      window.alert('最大5匹まで選択できます');
     }
   };
 
-  // パーティを分析
   const handleAnalyzeParty = async () => {
     if (selectedPokemons.length === 0) {
-      alert('ポケモンを1匹以上選択してください');
+      window.alert('ポケモンを1匹以上選択してください');
       return;
     }
 
@@ -46,18 +46,18 @@ function App() {
       setIsLoading(true);
       const analysis = await analyzeParty(selectedPokemons);
       setPartyAnalysis(analysis);
+      setSuggestions(null);
     } catch (error) {
-      alert('パーティの分析に失敗しました');
+      window.alert('パーティの分析に失敗しました');
       console.error(error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // パーティを自動生成
   const handleAutoComplete = async () => {
     if (selectedPokemons.length === 0) {
-      alert('ポケモンを1匹以上選択してください');
+      window.alert('ポケモンを1匹以上選択してください');
       return;
     }
 
@@ -65,22 +65,21 @@ function App() {
       setIsLoading(true);
       const suggestionResult = await suggestComplementaryParty(selectedPokemons, selectedBuildType?.strategy);
       setSuggestions(suggestionResult);
+      setPartyAnalysis(null);
     } catch (error) {
-      alert('パーティの自動生成に失敗しました');
+      window.alert('パーティの自動生成に失敗しました');
       console.error(error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // 選択をリセット
   const handleReset = () => {
     setSelectedPokemons([]);
     setPartyAnalysis(null);
     setSuggestions(null);
   };
 
-  // 提案されたパーティを使用
   const handleUseSuggestion = (suggestedParty) => {
     if (suggestedParty && suggestedParty.finalParty) {
       setSelectedPokemons(suggestedParty.finalParty);
@@ -89,100 +88,130 @@ function App() {
     }
   };
 
+  useEffect(() => {
+    if (partyAnalysis) {
+      analysisSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [partyAnalysis]);
+
+  useEffect(() => {
+    if (suggestions) {
+      suggestionSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [suggestions]);
+
   return (
     <div className="App">
       <header className="App-header">
-        <h1>🎮 ポケモン構築補完システム</h1>
-        <p>最強の相性補完パーティを自動生成</p>
+        <div className="hero-copy">
+          <span className="eyebrow">Champion League Ready</span>
+          <h1>ポケモン構築補完システム</h1>
+          <p>
+            公式チャンピオンズ掲載ポケモンに特化した、直感的で動きのある構築提案。
+            最大5匹の選択から補完パーティまで、すばやく最適化します。
+          </p>
+          <div className="hero-actions">
+            <button
+              type="button"
+              onClick={handleAnalyzeParty}
+              disabled={selectedPokemons.length === 0 || isLoading}
+            >
+              {isLoading ? '分析中...' : '耐性を分析'}
+            </button>
+            <button
+              type="button"
+              onClick={handleAutoComplete}
+              disabled={selectedPokemons.length === 0 || isLoading}
+            >
+              {isLoading ? '生成中...' : '自動生成'}
+            </button>
+          </div>
+        </div>
       </header>
 
-      <main className="container">
-        <section className="input-section">
-          <h2>ステップ1: ポケモンを選択</h2>
-          <PokemonSearch
-            onPokemonSelect={handlePokemonSelect}
-            selectedPokemons={selectedPokemons}
-          />
-
-          {buildTypes.length > 0 && (
-            <div className="build-type-selection">
-              <h3>構築タイプを選択</h3>
-              <select
-                value={selectedBuildType?.name || ''}
-                onChange={(e) => {
-                  const selected = buildTypes.find(type => type.name === e.target.value);
-                  setSelectedBuildType(selected);
-                }}
-                className="build-type-select"
-              >
-                <option value="">構築タイプを選択してください</option>
-                {buildTypes.map((type) => (
-                  <option key={type.name} value={type.name}>
-                    {type.name}
-                  </option>
-                ))}
-              </select>
-              {selectedBuildType && (
-                <div className="build-type-description">
-                  <p>{selectedBuildType.description}</p>
-                </div>
-              )}
+      <main className="App-content">
+        <div className="panel-grid">
+          <section className="panel panel-left">
+            <div className="panel-heading">
+              <span>STEP 1</span>
+              <h2>ポケモンを選択</h2>
             </div>
-          )}
+            <PokemonSearch onPokemonSelect={handlePokemonSelect} selectedPokemons={selectedPokemons} />
+            {buildTypes.length > 0 && (
+              <div className="build-type-selection">
+                <label htmlFor="build-type-select">構築タイプ</label>
+                <select
+                  id="build-type-select"
+                  value={selectedBuildType?.name || ''}
+                  onChange={(e) => {
+                    const selected = buildTypes.find(type => type.name === e.target.value);
+                    setSelectedBuildType(selected);
+                  }}
+                  className="build-type-select"
+                >
+                  <option value="">構築タイプを選択</option>
+                  {buildTypes.map((type) => (
+                    <option key={type.name} value={type.name}>
+                      {type.name}
+                    </option>
+                  ))}
+                </select>
+                {selectedBuildType && (
+                  <div className="build-type-description">
+                    <p>{selectedBuildType.description}</p>
+                  </div>
+                )}
+              </div>
+            )}
 
-          {selectedPokemons.length > 0 && (
             <div className="action-buttons">
               <button
+                type="button"
                 className="btn btn-primary"
                 onClick={handleAnalyzeParty}
-                disabled={isLoading}
+                disabled={selectedPokemons.length === 0 || isLoading}
               >
                 {isLoading ? '分析中...' : '耐性を分析'}
               </button>
               <button
+                type="button"
                 className="btn btn-success"
                 onClick={handleAutoComplete}
-                disabled={isLoading}
+                disabled={selectedPokemons.length === 0 || isLoading}
               >
-                {isLoading ? '生成中...' : 'パーティを自動生成'}
+                {isLoading ? '生成中...' : 'パーティ自動生成'}
               </button>
-              <button className="btn btn-danger" onClick={handleReset}>
+              <button
+                type="button"
+                className="btn btn-danger"
+                onClick={handleReset}
+              >
                 リセット
               </button>
             </div>
-          )}
-        </section>
+          </section>
+        </div>
 
         {partyAnalysis && (
-          <section className="analysis-section">
-            <h2>ステップ2: 耐性分析</h2>
+          <section ref={analysisSectionRef} className="analysis-section">
+            <h2>耐性分析</h2>
             <ResistanceMatrix partyAnalysis={partyAnalysis} />
           </section>
         )}
 
         {suggestions && (
-          <section className="suggestion-section">
-            <h2>ステップ3: パーティ提案</h2>
+          <section ref={suggestionSectionRef} className="suggestion-section">
+            <h2>パーティ提案</h2>
             <PartySuggestion suggestions={suggestions} selectedBuildType={selectedBuildType} onUseSuggestion={handleUseSuggestion} />
-          </section>
-        )}
-
-        {!partyAnalysis && !suggestions && selectedPokemons.length === 0 && (
-          <section className="info-section">
-            <h2>使い方</h2>
-            <ol>
-              <li>1〜3匹のポケモンを選択します</li>
-              <li>「耐性を分析」ボタンでパーティの弱点を確認</li>
-              <li>「パーティを自動生成」で相性補完ポケモンを提案</li>
-              <li>18タイプすべてに対応したチームを完成させます</li>
-            </ol>
           </section>
         )}
       </main>
 
       <footer className="App-footer">
-        <p>ポケモン構築補完＆自動生成システム © 2024</p>
+        <p>ポケモン構築補完＆自動生成システム</p>
       </footer>
+
+      <FeedbackForm />
     </div>
   );
 }

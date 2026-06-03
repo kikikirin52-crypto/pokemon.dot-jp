@@ -188,22 +188,32 @@ const JAPANESE_TO_ENGLISH = {
   // 他のポケモンも追加
 };
 
+function normalizeEnglishName(name) {
+  return name ? name.toString().trim().toLowerCase().replace(/\s+/g, '-') : null;
+}
+
+function normalizeJapaneseKey(name) {
+  return name ? name.toString().toLowerCase().replace(/[^a-z0-9]/g, '') : null;
+}
+
 function translateToEnglish(name) {
   if (!name) return null;
-  const normalized = name.toLowerCase().replace(/[^a-z0-9]/g, '');
-
-  // 英語名のまま入力された場合はそのまま返す
-  if (JAPANESE_TO_ENGLISH[name]) {
-    return JAPANESE_TO_ENGLISH[name];
-  }
+  const trimmed = name.toString().trim();
+  const lower = trimmed.toLowerCase();
 
   // 日本語名から英語名へ変換
-  const englishKey = Object.keys(JAPANESE_TO_ENGLISH).find((jpName) => jpName.toLowerCase().replace(/[^a-z0-9]/g, '') === normalized);
+  if (JAPANESE_TO_ENGLISH[trimmed]) {
+    return JAPANESE_TO_ENGLISH[trimmed];
+  }
+
+  const normalized = normalizeJapaneseKey(lower);
+  const englishKey = Object.keys(JAPANESE_TO_ENGLISH).find((jpName) => normalizeJapaneseKey(jpName) === normalized);
   if (englishKey) {
     return JAPANESE_TO_ENGLISH[englishKey];
   }
 
-  return normalized;
+  // 英語名のまま入力された場合はそのまま返す
+  return normalizeEnglishName(lower);
 }
 
 const dataFilePath = path.resolve(__dirname, '..', '..', 'data', 'champions-page-pokemon.json');
@@ -226,7 +236,7 @@ const OFFICIAL_CHAMPIONS_PAGE_POKEMON = rawChampionNames.map(japaneseName => {
 
 const OFFICIAL_CHAMPIONS_PAGE_NAME_SET = new Set(
   OFFICIAL_CHAMPIONS_PAGE_POKEMON
-    .map(pokemon => pokemon.normalizedEnglishName || pokemon.japaneseName.toLowerCase())
+    .map(pokemon => normalizeEnglishName(pokemon.normalizedEnglishName || pokemon.japaneseName.toLowerCase()))
 );
 
 function getOfficialChampionsPagePokemon() {

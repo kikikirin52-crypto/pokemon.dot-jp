@@ -324,11 +324,16 @@ const JAPANESE_TO_ENGLISH = Object.entries(JAPANESE_NAME_MAP).reduce((acc, [en, 
 }, {});
 
 const normalize = (value) => {
-  return value
-    .toString()
-    .trim()
+  let normalized = value.toString().trim();
+
+  normalized = normalized.replace(/^(ヒスイ|ガラル|アローラ)の(.+)$/u, '$2 ($1)');
+  normalized = normalized.replace(/^(サンダー|ファイヤー|フリーザー)の(.+)$/u, '$2 ($1)');
+
+  return normalized
     .toLowerCase()
     .replace(/[-\sー－―]/g, '')
+    .replace(/[()（）:：・\.。]/g, '')
+    .replace(/の姿|のすがた/g, '')
     .replace(/メガ/g, 'mega')
     .replace(/♀/g, 'f')
     .replace(/♂/g, 'm');

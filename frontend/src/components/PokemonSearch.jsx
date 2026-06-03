@@ -116,7 +116,7 @@ function PokemonSearch({ onPokemonSelect, selectedPokemons = [] }) {
       )}
 
       <div className="selected-pokemons">
-        <h4>選択済みポケモン ({selectedPokemons.length}/3)</h4>
+        <h4>選択済みポケモン ({selectedPokemons.length}/5)</h4>
         {selectedPokemons.length === 0 ? (
           <p className="no-pokemon">ポケモンをまだ選択していません</p>
         ) : (

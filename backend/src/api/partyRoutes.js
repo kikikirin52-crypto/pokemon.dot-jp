@@ -3,8 +3,8 @@ const router = express.Router();
 const { fetchPokemonDetails } = require('../services/pokeapi');
 const { buildTypes, identifyWeaknesses, suggestComplementaryParties } = require('../services/partyCompletion');
 const { USAGE_RANKINGS, filterChampionsOnly } = require('../services/usageRankings');
-const { getOfficialChampionsPagePokemon } = require('../services/championsPagePokemon');
-const { getJapaneseSuggestions, translateToJapanese, translateTypeToJapanese } = require('../services/japaneseNames');
+const { getOfficialChampionsPagePokemon, isOfficialChampionsPagePokemon } = require('../services/championsPagePokemon');
+const { getJapaneseSuggestions, translateToEnglish, translateToJapanese, translateTypeToJapanese } = require('../services/japaneseNames');
 
 /**
  * GET /api/search-suggestions
@@ -46,8 +46,16 @@ router.post('/search', async (req, res) => {
       return res.status(400).json({ error: 'ポケモン名が必要です' });
     }
 
-    console.log(`[API] ポケモン検索: ${name}`);
-    const pokemon = await fetchPokemonDetails(name);
+    const searchName = translateToEnglish(name);
+    if (!isOfficialChampionsPagePokemon(searchName)) {
+      return res.status(404).json({
+        success: false,
+        error: `ポケモン「${name}」は公式チャンピオンズページに掲載されていません。`
+      });
+    }
+
+    console.log(`[API] ポケモン検索: ${searchName}`);
+    const pokemon = await fetchPokemonDetails(searchName);
 
     console.log(`[API] 検索成功: ${pokemon.name}`);
     res.json({

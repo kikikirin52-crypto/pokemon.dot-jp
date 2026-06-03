@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: pokemon-party-builder
+    env: node
+    plan: free
+    branch: main
+    root: .
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    autoDeploy: true

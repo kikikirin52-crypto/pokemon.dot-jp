@@ -80,7 +80,6 @@ function PartySuggestion({ suggestions, selectedBuildType, onUseSuggestion }) {
       {selectedBuildType && (
         <div className="selected-build-type">
           <h4>選択された構築タイプ: {selectedBuildType.name}</h4>
-          <p>{selectedBuildType.description}</p>
         </div>
       )}
       {isMulti ? (

@@ -1,5 +1,5 @@
 const { calculateDamageTaken, scanTypeResistances } = require('./typeEffectiveness');
-const { getUsageBonus } = require('./usageRankings');
+const { getUsageBonus, USAGE_RANKINGS } = require('./usageRankings');
 const { getBasePokemonName: getBaseName } = require('./japaneseNames');
 
 /**
@@ -89,7 +89,30 @@ function identifyWeaknesses(partyMembers) {
  * 補完候補のスコアリング
  * Score = (解消できる一貫性タイプの数 × 100) + 使用率ボーナス
  */
-function scoreCandidate(candidate, currentWeaknesses, buildType = null, party = []) {
+function calculateTopTenCoverageBonus(candidate, topRankedPokemon) {
+  if (!topRankedPokemon || topRankedPokemon.length === 0) {
+    return 0;
+  }
+
+  let coveredCount = 0;
+  topRankedPokemon.forEach(topPokemon => {
+    if (!topPokemon.types || topPokemon.types.length === 0) {
+      return;
+    }
+
+    const worstDamage = topPokemon.types
+      .map(type => calculateDamageTaken(type, candidate.types))
+      .reduce((max, damage) => Math.max(max, damage), 0);
+
+    if (worstDamage <= 1.0) {
+      coveredCount += 1;
+    }
+  });
+
+  return coveredCount * 30;
+}
+
+function scoreCandidate(candidate, currentWeaknesses, buildType = null, party = [], topRankedPokemon = []) {
   const resistantTypes = [];
 
   // このポケモンが受けられるタイプを調べる
@@ -103,6 +126,7 @@ function scoreCandidate(candidate, currentWeaknesses, buildType = null, party = 
   // スコア計算
   const typeScore = resistantTypes.length * 100;
   const usageBonus = getUsageBonus(candidate.name);
+  const topTenBonus = calculateTopTenCoverageBonus(candidate, topRankedPokemon);
   let buildBonus = 0;
 
   // 構築タイプによるボーナス
@@ -142,7 +166,7 @@ function scoreCandidate(candidate, currentWeaknesses, buildType = null, party = 
   const currentMegaCount = countMegaPokemon(party);
   const megaBonus = (currentMegaCount < 2 && isMegaPokemon(candidate.name)) ? 50 : 0;
 
-  const totalScore = typeScore + usageBonus + buildBonus + megaBonus;
+  const totalScore = typeScore + usageBonus + buildBonus + megaBonus + topTenBonus;
 
   return {
     pokemon: candidate.name,
@@ -151,6 +175,7 @@ function scoreCandidate(candidate, currentWeaknesses, buildType = null, party = 
     usageBonus: usageBonus,
     buildBonus: buildBonus,
     megaBonus: megaBonus,
+    topTenBonus: topTenBonus,
     coversTypes: resistantTypes,
     coverCount: resistantTypes.length
   };
@@ -162,6 +187,11 @@ function scoreCandidate(candidate, currentWeaknesses, buildType = null, party = 
  */
 function suggestComplementaryParties(initialParty, candidatePool, buildType = null, maxPartySize = 6) {
   const generateParty = (usageWeight, targetWeaknessCount = null, prioritizeStats = false, sharedUsed = null) => {
+    const topRankedPokemon = [...candidatePool]
+      .filter(candidate => USAGE_RANKINGS[candidate.name.toLowerCase()]?.rank)
+      .sort((a, b) => (USAGE_RANKINGS[a.name.toLowerCase()]?.rank || Number.MAX_SAFE_INTEGER) - (USAGE_RANKINGS[b.name.toLowerCase()]?.rank || Number.MAX_SAFE_INTEGER))
+      .slice(0, 10);
+
     const party = [...initialParty];
     const used = sharedUsed || new Set();
     if (!sharedUsed) {
@@ -252,12 +282,13 @@ function suggestComplementaryParties(initialParty, candidatePool, buildType = nu
               usageBonus: 0,
               buildBonus: 0,
               megaBonus: 0,
+              topTenBonus: 0,
               coversTypes: [],
               coverCount: 0
             };
           } else {
             // 通常の弱点カバーロジック
-            return scoreCandidate(candidate, weaknesses, buildType, party);
+            return scoreCandidate(candidate, weaknesses, buildType, party, topRankedPokemon);
           }
         })
         .sort((a, b) => b.totalScore - a.totalScore);
@@ -298,19 +329,14 @@ module.exports = {
   scoreCandidate,
   suggestComplementaryParties,
   buildTypes: {
-    '積み（展開）構築': {
-      name: '積み（展開）構築',
-      description: '起点作成ポケモン（アローラキュウコンなど）で起点（そのポケモンの目の前なら倒されたり致命傷を負うことなく安全に積み技を積める相手ポケモン）を作ってエースが龍舞、瞑想など能力を上げる技（積み技）を使って相手を全抜きしていくことを目指す構築。要は最初の一匹でリフレクとか貼って後続が能力あげて戦う。動きが分かりやすく使いやすいですが相手に読まれて挑発やアンコールを受けやすいのが難点。運が上振れしにくいが何回も攻撃を被弾する都合急所などの下振れが起こりやすい。正直今の環境は積みに対するストッパーが多すぎてこの手の構築は難しいと思う。',
-      strategy: 'expansion'
-    },
     'サイクル構築': {
       name: 'サイクル構築',
-      description: 'サイクル構築は交代を駆使しながら目の前の相手に有利なポケモンを出し続け、ステルスロックなどで敵を削ったりこだわりハチマキ、こだわり眼鏡の高火力で相手の交代先に負荷をかけていき、3対3で勝つことを目指す構築です。この構築に入るポケモンは高火力・高耐久や、優秀なタイプ耐性と味方ポケモンとの相性補完、回復技持ち、交代しながら攻撃できるとんぼ返り・ボルトチェンジを使えるポケモンです。環境のポケモンを把握し、どのポケモンにどのポケモンで対応するかは勿論、高ランク帯では相手ポケモンの型や交代先を読むプレイングも要求されるので他の二種類と比べて扱いづらい構築となります。しかし私はこの構築こそが一番ポケモンらしいと思っています',
+      description: '**サイクル構築**とは、有利なポケモンへ交代を繰り返しながら戦い、ステルスロックや高火力技で相手を少しずつ削って勝つ構築です。\n\n**長所**：柔軟に立ち回れ、幅広い相手に対応できる\n**短所**：相手の型や交代先を読む必要があり、扱うのが難しい\n\n簡単に言うと、**交代を駆使して有利対面を作り続けながら勝つ構築**です。',
       strategy: 'cycle'
     },
     '受けループ': {
       name: '受けループ',
-      description: '高耐久かつ回復技を使えるポケモンで固め、相手の攻撃を受けきり、ステルスロックや毒の定数ダメージでじわじわと削る構築で、サイクル構築の一種です。倒せない相手には時間切れでの判定勝ち（TOD）を狙えます。弱点としては流星群カイリューなどの予測不可能なポケモンや鉢巻きウーラオス・ランドロス、眼鏡イーユイなどの高火力、アンコールやこだわりトリック、未来予知などで崩されるところです。',
+      description: '**受けループ（受け構築）**とは、高耐久ポケモンで相手の攻撃を受け続け、毒やステルスロックなどの定数ダメージで少しずつ削って勝つ構築です。\n\n**長所**：耐久力が高く安定して戦える\n**短所**：高火力アタッカーやアンコール、トリックなどで崩されやすい\n\n簡単に言うと、**相手の攻撃を受け切りながらじわじわ削って勝つ構築**です。',
       strategy: 'stall'
     }
   }
