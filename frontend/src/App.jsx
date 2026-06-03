@@ -1,20 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import PokemonSearch from './components/PokemonSearch';
-import ResistanceMatrix from './components/ResistanceMatrix';
 import PartySuggestion from './components/PartySuggestion';
 import FeedbackForm from './components/FeedbackForm';
-import { analyzeParty, suggestComplementaryParty, getBuildTypes } from './api/client';
+import { suggestComplementaryParty, getBuildTypes } from './api/client';
 import './App.css';
 
 function App() {
   const [selectedPokemons, setSelectedPokemons] = useState([]);
-  const [partyAnalysis, setPartyAnalysis] = useState(null);
   const [suggestions, setSuggestions] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [buildTypes, setBuildTypes] = useState([]);
   const [selectedBuildType, setSelectedBuildType] = useState(null);
   const [appError, setAppError] = useState('');
-  const analysisSectionRef = useRef(null);
   const suggestionSectionRef = useRef(null);
 
   useEffect(() => {
@@ -50,26 +47,6 @@ function App() {
     setSelectedPokemons(selectedPokemons.filter((_, i) => i !== index));
   };
 
-  const handleAnalyzeParty = async () => {
-    if (selectedPokemons.length === 0) {
-      setAppError('ポケモンを1匹以上選択してください');
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      const analysis = await analyzeParty(selectedPokemons);
-      setPartyAnalysis(analysis);
-      setSuggestions(null);
-      setAppError('');
-    } catch (error) {
-      setAppError('パーティの分析に失敗しました');
-      console.error(error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleAutoComplete = async () => {
     if (selectedPokemons.length === 0) {
       setAppError('ポケモンを1匹以上選択してください');
@@ -80,7 +57,6 @@ function App() {
       setIsLoading(true);
       const suggestionResult = await suggestComplementaryParty(selectedPokemons, selectedBuildType?.strategy);
       setSuggestions(suggestionResult);
-      setPartyAnalysis(null);
       setAppError('');
     } catch (error) {
       setAppError('パーティの自動生成に失敗しました');
@@ -92,7 +68,6 @@ function App() {
 
   const handleReset = () => {
     setSelectedPokemons([]);
-    setPartyAnalysis(null);
     setSuggestions(null);
     setAppError('');
   };
@@ -100,16 +75,9 @@ function App() {
   const handleUseSuggestion = (suggestedParty) => {
     if (suggestedParty && suggestedParty.finalParty) {
       setSelectedPokemons(suggestedParty.finalParty);
-      setPartyAnalysis(null);
       setSuggestions(null);
     }
   };
-
-  useEffect(() => {
-    if (partyAnalysis) {
-      analysisSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }, [partyAnalysis]);
 
   useEffect(() => {
     if (suggestions) {
@@ -130,17 +98,10 @@ function App() {
           <div className="hero-actions">
             <button
               type="button"
-              onClick={handleAnalyzeParty}
-              disabled={selectedPokemons.length === 0 || isLoading}
-            >
-              {isLoading ? '分析中...' : '耐性を分析'}
-            </button>
-            <button
-              type="button"
               onClick={handleAutoComplete}
               disabled={selectedPokemons.length === 0 || isLoading}
             >
-              {isLoading ? '生成中...' : '自動生成'}
+              {isLoading ? '生成中...' : 'パーティ自動生成'}
             </button>
           </div>
           {appError && (
@@ -189,15 +150,7 @@ function App() {
             )}
 
             <div className="action-buttons">
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={handleAnalyzeParty}
-                disabled={selectedPokemons.length === 0 || isLoading}
-              >
-                {isLoading ? '分析中...' : '耐性を分析'}
-              </button>
-              <button
+                <button
                 type="button"
                 className="btn btn-success"
                 onClick={handleAutoComplete}
@@ -215,13 +168,6 @@ function App() {
             </div>
           </section>
         </div>
-
-        {partyAnalysis && (
-          <section ref={analysisSectionRef} className="analysis-section">
-            <h2>耐性分析</h2>
-            <ResistanceMatrix partyAnalysis={partyAnalysis} />
-          </section>
-        )}
 
         {suggestions && (
           <section ref={suggestionSectionRef} className="suggestion-section">
