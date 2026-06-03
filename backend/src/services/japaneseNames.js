@@ -163,6 +163,38 @@ const JAPANESE_NAME_MAP = {
   'amaura': 'アマルルガ',
   'tyrunt': 'バリコオル',
   'pyroar': 'デスバーン'
+  // チャンピオンズ掲載ポケモンのメガ表記（不足分を追加）
+  ,'charizard-mega': 'メガリザードン'
+  ,'aegislash-mega': 'メガギルガルド'
+  ,'mimikyu-disguised-mega': 'メガミミッキュ'
+  ,'azumarill-mega': 'メガマリルリ'
+  ,'snorlax-mega': 'メガカビゴン'
+  ,'ninetales-mega': 'メガキュウコン'
+  ,'tinkaton-mega': 'メガデカヌチャン'
+  ,'arcanine-mega': 'メガウインディ'
+  ,'vaporeon-mega': 'メガシャワーズ'
+  ,'jolteon-mega': 'メガサンダース'
+  ,'machamp-mega': 'メガカイリキー'
+  ,'vanillite-mega': 'メガバイバニラ'
+  ,'sawk-mega': 'メガデスカーン'
+  ,'pikachu-mega': 'メガピカチュウ'
+  ,'roserade-mega': 'メガロズレイド'
+  ,'klefki-mega': 'メガクレッフィ'
+  ,'amaura-mega': 'メガアマルルガ'
+  ,'barbaracle-mega': 'メガガチゴラス'
+  ,'avalugg-mega': 'メガゴロンダ'
+  ,'emolga-mega': 'メガエモンガ'
+  ,'flareon-mega': 'メガブースター'
+  ,'raichu-mega': 'メガライチュウ'
+  ,'tyrunt-mega': 'メガバリコオル'
+  ,'meowstic-mega': 'メガトリミアン'
+  ,'liepard-mega': 'メガレパルダス'
+  ,'garbodor-mega': 'メガダストダス'
+  ,'oshawott-mega': 'メガヒヤッキー'
+  ,'pignite-mega': 'メガミルホッグ'
+  ,'tepig-mega': 'メガバオッキー'
+  ,'snivy-mega': 'メガヤナッキー'
+  ,'snorunt-mega': 'メガポワルン'
 };
 
 // ランキングポケモンの追加 (地域別フォームと特別フォーム)
