@@ -62,19 +62,21 @@ function canAddCandidateByTypeLimit(candidate, partyMembers, maxSameTypeCount = 
   return candidate.types.every(type => (typeCounts[type] || 0) < maxSameTypeCount);
 }
 
-function hasOverlappingType(candidate, partyMembers) {
+function getPreferredPartyTypes(partyMembers, maxTypes = 2) {
+  const typeCounts = getPartyTypeFrequency(partyMembers);
+  return Object.entries(typeCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, maxTypes)
+    .map(([type]) => type);
+}
+
+function sharesPartyType(candidate, partyMembers) {
   if (!candidate.types || !Array.isArray(candidate.types)) {
     return false;
   }
 
-  const partyTypes = new Set();
-  partyMembers.forEach(member => {
-    if (Array.isArray(member.types)) {
-      member.types.forEach(type => partyTypes.add(type));
-    }
-  });
-
-  return candidate.types.some(type => partyTypes.has(type));
+  const preferredTypes = new Set(getPreferredPartyTypes(partyMembers));
+  return candidate.types.some(type => preferredTypes.has(type));
 }
 
 function calculateTypeSynergyBonus(candidate, partyMembers, buildType = null) {
@@ -283,10 +285,11 @@ function suggestComplementaryParties(initialParty, candidatePool, buildType = nu
       });
       if (remainingCandidates.length === 0) break;
 
-      // タイプが重ならない候補を優先
-      let filteredCandidates = remainingCandidates.filter(candidate => !hasOverlappingType(candidate, party));
+      // パーティ内のタイプを優先しつつ、同じタイプが3体以上にならないようにする
+      let filteredCandidates = remainingCandidates.filter(candidate =>
+        canAddCandidateByTypeLimit(candidate, party, 2) && sharesPartyType(candidate, party)
+      );
       if (filteredCandidates.length === 0) {
-        // 完全な重複排除候補がない場合は、同じタイプが3体以上にならない候補を使う
         filteredCandidates = remainingCandidates.filter(candidate => canAddCandidateByTypeLimit(candidate, party, 2));
       }
       if (filteredCandidates.length === 0) {
