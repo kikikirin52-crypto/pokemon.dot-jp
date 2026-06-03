@@ -46,10 +46,16 @@ input {
 .App-header {
   position: relative;
   overflow: hidden;
-  padding: clamp(2rem, 4vw, 4rem) 2rem 3rem;
+  padding: clamp(1.5rem, 4vw, 4rem) clamp(1rem, 3vw, 2rem) 2rem;
   margin-bottom: 2rem;
   background: linear-gradient(180deg, #ffffff 0%, #e2e8f0 100%);
   border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+@media (max-width: 640px) {
+  .App-header {
+    padding: 1.25rem 1rem 1.75rem;
+  }
 }
 
 .hero-copy {
@@ -75,10 +81,16 @@ input {
 
 .App-header h1 {
   margin: 0;
-  font-size: clamp(2.4rem, 5vw, 4rem);
+  font-size: clamp(1.8rem, 5vw, 4rem);
   line-height: 1.03;
   letter-spacing: -0.04em;
   color: #111827;
+}
+
+@media (max-width: 640px) {
+  .App-header h1 {
+    font-size: 1.6rem;
+  }
 }
 
 .App-header p {

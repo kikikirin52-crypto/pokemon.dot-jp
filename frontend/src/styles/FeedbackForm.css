@@ -5,6 +5,18 @@
   z-index: 1000;
 }
 
+@media (max-width: 640px) {
+  .feedback-container {
+    bottom: 20px;
+    right: 20px;
+  }
+
+  .feedback-button {
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+}
+
 .feedback-button {
   background: linear-gradient(135deg, #06b6d4, #0891b2);
   color: white;
@@ -66,6 +78,19 @@
   flex-direction: column;
   overflow-y: auto;
   animation: slideUp 0.3s ease;
+}
+
+@media (max-width: 640px) {
+  .feedback-modal-content {
+    max-width: 100%;
+    max-height: 85vh;
+    border-radius: 12px 12px 0 0;
+  }
+
+  .feedback-modal-header,
+  .feedback-form {
+    padding: 16px;
+  }
 }
 
 /* ヘッダー */
