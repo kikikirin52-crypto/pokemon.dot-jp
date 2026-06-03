@@ -79,6 +79,26 @@ function sharesPartyType(candidate, partyMembers) {
   return candidate.types.some(type => preferredTypes.has(type));
 }
 
+function calculateTypeOverlapPenalty(candidate, partyMembers) {
+  if (!candidate.types || !Array.isArray(candidate.types)) {
+    return 0;
+  }
+
+  const typeCounts = getPartyTypeFrequency(partyMembers);
+  return candidate.types.reduce((penalty, type) => penalty + (typeCounts[type] || 0), 0);
+}
+
+function calculateNewTypeBonus(candidate, partyMembers) {
+  if (!candidate.types || !Array.isArray(candidate.types)) {
+    return 0;
+  }
+
+  const existingTypes = new Set(Object.keys(getPartyTypeFrequency(partyMembers)));
+  return candidate.types.reduce((bonus, type) => {
+    return bonus + (existingTypes.has(type) ? 0 : 1);
+  }, 0) * 80;
+}
+
 function calculateTypeSynergyBonus(candidate, partyMembers, buildType = null) {
   if (buildType !== 'cycle' || !Array.isArray(candidate.types)) {
     return 0;
@@ -160,7 +180,10 @@ function scoreCandidate(candidate, currentWeaknesses, buildType = null, party = 
   });
 
   // スコア計算
-  const typeScore = resistantTypes.length * 100;
+  const newTypeBonus = calculateNewTypeBonus(candidate, party);
+  const overlapPenalty = calculateTypeOverlapPenalty(candidate, party) * 60;
+
+  const typeScore = resistantTypes.length * 120 + newTypeBonus - overlapPenalty;
   const usageBonus = getUsageBonus(candidate.name);
   let buildBonus = 0;
 
@@ -253,10 +276,19 @@ function suggestComplementaryParties(initialParty, candidatePool, buildType = nu
       });
       if (remainingCandidates.length === 0) break;
 
-      // パーティ内のタイプを優先しつつ、同じタイプが3体以上にならないようにする
+      // なるべく同じタイプの重複を避けつつ、タイプ分散を優先する
+      const typeLimit = buildType === 'cycle' ? 2 : 1;
       let filteredCandidates = remainingCandidates.filter(candidate =>
-        canAddCandidateByTypeLimit(candidate, party, 2) && sharesPartyType(candidate, party)
+        canAddCandidateByTypeLimit(candidate, party, typeLimit)
       );
+
+      if (buildType === 'cycle' && filteredCandidates.length > 0) {
+        const sameTypeCandidates = filteredCandidates.filter(candidate => sharesPartyType(candidate, party));
+        if (sameTypeCandidates.length > 0) {
+          filteredCandidates = sameTypeCandidates;
+        }
+      }
+
       if (filteredCandidates.length === 0) {
         filteredCandidates = remainingCandidates.filter(candidate => canAddCandidateByTypeLimit(candidate, party, 2));
       }
