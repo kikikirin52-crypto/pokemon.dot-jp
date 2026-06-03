@@ -42,6 +42,50 @@ function calculateTotalStats(pokemon) {
   return 0;
 }
 
+function getPartyTypeFrequency(partyMembers) {
+  return partyMembers.reduce((counts, member) => {
+    if (Array.isArray(member.types)) {
+      member.types.forEach(type => {
+        counts[type] = (counts[type] || 0) + 1;
+      });
+    }
+    return counts;
+  }, {});
+}
+
+function canAddCandidateByTypeLimit(candidate, partyMembers, maxSameTypeCount = 2) {
+  if (!candidate.types || !Array.isArray(candidate.types)) {
+    return true;
+  }
+
+  const typeCounts = getPartyTypeFrequency(partyMembers);
+  return candidate.types.every(type => (typeCounts[type] || 0) < maxSameTypeCount);
+}
+
+function calculateTypeSynergyBonus(candidate, partyMembers, buildType = null) {
+  if (buildType !== 'cycle' || !Array.isArray(candidate.types)) {
+    return 0;
+  }
+
+  const typeCounts = getPartyTypeFrequency(partyMembers);
+  let synergyScore = candidate.types.reduce((score, type) => {
+    return score + (typeCounts[type] || 0) * 20;
+  }, 0);
+
+  const hasMeowscarada = partyMembers.some(member => member.name.toLowerCase().includes('meowscarada'));
+  const hasGreninja = partyMembers.some(member => member.name.toLowerCase().includes('greninja'));
+  if (hasMeowscarada && hasGreninja) {
+    if (candidate.types.includes('dark')) {
+      synergyScore += 30;
+    }
+    if (candidate.types.includes('water')) {
+      synergyScore += 20;
+    }
+  }
+
+  return synergyScore;
+}
+
 /**
  * 現在のパーティの「一貫性（穴）」を特定
  * = 18タイプ全ての攻撃を当てて、全員が等倍以上で受けるタイプを抽出
@@ -165,8 +209,9 @@ function scoreCandidate(candidate, currentWeaknesses, buildType = null, party = 
   // メガシンカボーナス（パーティにメガシンカが2匹未満の場合）
   const currentMegaCount = countMegaPokemon(party);
   const megaBonus = (currentMegaCount < 2 && isMegaPokemon(candidate.name)) ? 50 : 0;
+  const synergyBonus = calculateTypeSynergyBonus(candidate, party, buildType);
 
-  const totalScore = typeScore + usageBonus + buildBonus + megaBonus + topTenBonus;
+  const totalScore = typeScore + usageBonus + buildBonus + megaBonus + topTenBonus + synergyBonus;
 
   return {
     pokemon: candidate.name,
@@ -176,6 +221,7 @@ function scoreCandidate(candidate, currentWeaknesses, buildType = null, party = 
     buildBonus: buildBonus,
     megaBonus: megaBonus,
     topTenBonus: topTenBonus,
+    synergyBonus: synergyBonus,
     coversTypes: resistantTypes,
     coverCount: resistantTypes.length
   };
@@ -222,14 +268,18 @@ function suggestComplementaryParties(initialParty, candidatePool, buildType = nu
       });
       if (remainingCandidates.length === 0) break;
 
+      // 同じタイプが3体以上にならないようにフィルタリング
+      let filteredCandidates = remainingCandidates.filter(candidate => canAddCandidateByTypeLimit(candidate, party, 2));
+      if (filteredCandidates.length === 0) {
+        filteredCandidates = remainingCandidates;
+      }
+
       // メガシンカが2匹を超えないようにフィルタリング
       const currentMegaCount = countMegaPokemon(party);
-      let filteredCandidates = remainingCandidates;
       if (currentMegaCount >= 2) {
-        filteredCandidates = remainingCandidates.filter(candidate => !isMegaPokemon(candidate.name));
-        if (filteredCandidates.length === 0) {
-          // メガシンカ以外がない場合はメガシンカも選択可能
-          filteredCandidates = remainingCandidates;
+        const megaFiltered = filteredCandidates.filter(candidate => !isMegaPokemon(candidate.name));
+        if (megaFiltered.length > 0) {
+          filteredCandidates = megaFiltered;
         }
       }
 
@@ -245,14 +295,16 @@ function suggestComplementaryParties(initialParty, candidatePool, buildType = nu
             );
             break;
           case 'cycle':
-            // サイクル構築: 高火力・高速ポケモンを優先
+            // サイクル構築: 高火力・高速ポケモンを優先しつつ、既存のタイプ一貫性を維持
             const avgCycleScore = filteredCandidates.reduce((sum, c) => 
               sum + (c.stats?.attack || 0) + (c.stats?.['special-attack'] || 0) + (c.stats?.speed || 0),
               0
             ) / filteredCandidates.length;
-            filteredCandidates = filteredCandidates.filter(c => 
-              ((c.stats?.attack || 0) + (c.stats?.['special-attack'] || 0) + (c.stats?.speed || 0)) >= avgCycleScore
-            );
+            filteredCandidates = filteredCandidates.filter(c => {
+              const cycleScore = (c.stats?.attack || 0) + (c.stats?.['special-attack'] || 0) + (c.stats?.speed || 0);
+              const synergyBonus = calculateTypeSynergyBonus(c, party, 'cycle');
+              return cycleScore >= avgCycleScore || synergyBonus > 0;
+            });
             break;
           case 'stall':
             // 受けループ: 高耐久ポケモンを優先（HP+防御+特防が高いポケモンを残す）
