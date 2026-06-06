@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://pokemon-dot-jp.onrender.com/sitemap.xml
