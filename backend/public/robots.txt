@@ -1,4 +1,14 @@
+# robots.txt for https://pokemon-dot-jp.onrender.com
+# Allow all public pages, but avoid indexing API endpoints and admin paths.
+
 User-agent: *
+Disallow: /api/
+Disallow: /admin/
+Disallow: /backend/
+Allow: /
+
+# Explicitly allow Googlebot (no restrictions)
+User-agent: Googlebot
 Allow: /
 
 Sitemap: https://pokemon-dot-jp.onrender.com/sitemap.xml
